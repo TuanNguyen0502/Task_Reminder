@@ -87,11 +87,12 @@ public class MainActivity extends AppCompatActivity implements OnDialogCloseList
         itemTouchHelper.attachToRecyclerView(recyclerView);
     }
 
-    public void insertTask(String title, String description, String dueTime) {
+    public void insertTask(TaskModel taskModel) {
         ContentValues values = new ContentValues();
-        values.put("title", title);
-        values.put("description", description);
-        values.put("due_time", dueTime);
+        values.put("id", taskModel.getId());
+        values.put("title", taskModel.getTitle());
+        values.put("description", taskModel.getDescription());
+        values.put("due_time", taskModel.getDue_time());
 
         Uri newTaskUri = getContentResolver().insert(uri, values);
         if (newTaskUri != null) {
@@ -119,7 +120,7 @@ public class MainActivity extends AppCompatActivity implements OnDialogCloseList
         }
     }
 
-    public void deleteTask(int taskId) {
+    public void deleteTask(long taskId) {
         int rowsDeleted = getContentResolver().delete(
                 Uri.parse(Uri.parse("content://hcmute.edu.vn.hongtuan.taskcontentprovider/tasks") + "/" + taskId),
                 null, null
@@ -140,7 +141,7 @@ public class MainActivity extends AppCompatActivity implements OnDialogCloseList
         if (cursor != null && cursor.moveToFirst()) {
             do {
                 TaskModel taskModel = new TaskModel();
-                taskModel.setId(cursor.getInt(cursor.getColumnIndex("id")));
+                taskModel.setId(cursor.getLong(cursor.getColumnIndex("id")));
                 taskModel.setTitle(cursor.getString(cursor.getColumnIndex("title")));
                 taskModel.setDescription(cursor.getString(cursor.getColumnIndex("description")));
                 taskModel.setDue_time(cursor.getString(cursor.getColumnIndex("due_time")));

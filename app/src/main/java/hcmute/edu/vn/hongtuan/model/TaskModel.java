@@ -6,7 +6,7 @@ import java.util.Date;
 import java.util.Locale;
 
 public class TaskModel {
-    private int id;
+    private long id;
     private String title;
     private String description;
     private String due_time;
@@ -27,11 +27,11 @@ public class TaskModel {
         return sdf.format(new Date(timestamp)); // Format the timestamp
     }
 
-    public int getId() {
+    public long getId() {
         return id;
     }
 
-    public void setId(int id) {
+    public void setId(long id) {
         this.id = id;
     }
 

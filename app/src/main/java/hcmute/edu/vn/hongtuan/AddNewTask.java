@@ -78,15 +78,23 @@ public class AddNewTask extends BottomSheetDialogFragment {
             String title = bundle.getString("title");
             String description = bundle.getString("description");
             String date = bundle.getString("date");
-            // Split the string to extract year, month, and day
-            String[] parts = date.split("-");
-            int year = Integer.parseInt(parts[0]);
-            int month = Integer.parseInt(parts[1]) - 1; // Month is 0-based
-            int day = Integer.parseInt(parts[2]);
+            // Split date into parts (date and time)
+            String[] dateParts = date.split(" ");
+            String[] dateParts1 = dateParts[0].split("-");
+            int year = Integer.parseInt(dateParts1[0]);
+            int month = Integer.parseInt(dateParts1[1]) - 1;
+            int day = Integer.parseInt(dateParts1[2]);
+            String[] dateParts2 = dateParts[1].split(":");
+            int hour = Integer.parseInt(dateParts2[0]);
+            int minute = Integer.parseInt(dateParts2[1]);
+            // Set EditText to this text
             editText_title.setText(title);
             editText_description.setText(description);
             // Set DatePicker to this date
             datePicker.updateDate(year, month, day);
+            // Set TimePicker to this time
+            timePicker.setHour(hour);
+            timePicker.setMinute(minute);
         }
 
         boolean finalIsUpdate = isUpdate;
@@ -97,13 +105,11 @@ public class AddNewTask extends BottomSheetDialogFragment {
             String formattedDate = String.format(Locale.getDefault(), "%04d-%02d-%02d %02d:%02d:00",
                     datePicker.getYear(), datePicker.getMonth() + 1, datePicker.getDayOfMonth(), timePicker.getHour(), timePicker.getMinute());
             taskModel.setDue_time(formattedDate);
+
             if (finalIsUpdate) {
 //                dataBaseHelper.updateTask(bundle.getInt("id"), title1, description1, date1);
-                taskModel.setId((int) bundle.getLong("id"));
+                taskModel.setId(bundle.getLong("id"));
                 mainActivity.updateTask(taskModel);
-            } else {
-//                dataBaseHelper.addTask(todoModel);
-                mainActivity.insertTask(taskModel.getTitle(), taskModel.getDescription(), taskModel.getDue_time());
                 Calendar calendar = Calendar.getInstance();
                 calendar.set(Calendar.YEAR, datePicker.getYear());
                 calendar.set(Calendar.MONTH, datePicker.getMonth());
@@ -113,23 +119,39 @@ public class AddNewTask extends BottomSheetDialogFragment {
                 calendar.set(Calendar.SECOND, 0); // Set seconds to 0
                 // Convert to milliseconds
                 long dueTimeMillis = calendar.getTimeInMillis();
-                setTaskReminder(mainActivity, dueTimeMillis, taskModel.getTitle());
+                setTaskReminder(mainActivity, dueTimeMillis, taskModel.getId(), taskModel.getTitle());
+            } else {
+//                dataBaseHelper.addTask(todoModel);
+                taskModel.setId(System.currentTimeMillis());
+                mainActivity.insertTask(taskModel);
+                Calendar calendar = Calendar.getInstance();
+                calendar.set(Calendar.YEAR, datePicker.getYear());
+                calendar.set(Calendar.MONTH, datePicker.getMonth());
+                calendar.set(Calendar.DAY_OF_MONTH, datePicker.getDayOfMonth());
+                calendar.set(Calendar.HOUR_OF_DAY, timePicker.getHour());
+                calendar.set(Calendar.MINUTE, timePicker.getMinute());
+                calendar.set(Calendar.SECOND, 0); // Set seconds to 0
+                // Convert to milliseconds
+                long dueTimeMillis = calendar.getTimeInMillis();
+                setTaskReminder(mainActivity, dueTimeMillis, taskModel.getId(), taskModel.getTitle());
             }
             dismiss();
         });
     }
 
     @SuppressLint("ScheduleExactAlarm")
-    public void setTaskReminder(Context context, long dueTimeMillis, String taskTitle) {
+    public void setTaskReminder(Context context, long dueTimeMillis, long taskId, String taskTitle) {
         AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
         Intent intent = new Intent(context, TaskReminderReceiver.class);
         intent.putExtra("task_title", taskTitle);
 
         PendingIntent pendingIntent = PendingIntent.getBroadcast(
-                context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+                context, (int) taskId, intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
         );
 
         if (alarmManager != null) {
+            // Cancel old alarm before setting a new one
+            alarmManager.cancel(pendingIntent);
             alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, dueTimeMillis, pendingIntent);
         }
     }
